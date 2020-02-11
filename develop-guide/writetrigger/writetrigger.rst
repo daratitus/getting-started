@@ -632,13 +632,13 @@ exists in the output. Both keys are optional.
 
         # Can have as many items under include or exclude that you want
         include:
-            - key: '12.9.1'
-            - key: 'CSR1000V'
+            - '12.9.1'
+            - 'CSR1000V'
             # Regular expression can also be provided
-            - key: '\d+'
+            - '\d+'
 
         exclude:
-            - key: 'Should not be in the output'
+            - 'Should not be in the output'
         ...
 
 Parse
@@ -663,7 +663,8 @@ somewhere in the output, irrelevant of the structure.
               value: 16.9.1
             - key: "[version][main_mem]"
               # Make sure the memory is greater than 1217420
-              operation: >= 1217420
+              value : 1217420
+              operation: >=
         exclude:
             - key: "[platform]"
               output: VIRTUAL XE
@@ -911,10 +912,9 @@ it is better to store data in a {key:value} pair format (section-example_1).
 If you use it as part of a string (section-example_2) the data type would be
 casting to string.
 
-**Note: It is not possible to save an output and load that same output in
-parallel into another variable. It is possible to take advantage of thus 
+**Note: It is not possible to save an output and load that same output
+into another variable in parallel. It is possible to take advantage of this 
 markup language in any other scenario. 
-
 
 Trigger timeout/interval ratio adjustments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
