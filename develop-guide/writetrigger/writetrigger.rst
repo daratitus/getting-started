@@ -632,12 +632,13 @@ exists in the output. Both keys are optional.
 
         # Can have as many items under include or exclude that you want
         include:
-            - '12.9.1'
-            - 'CSR1000V'
+            - key: '12.9.1'
+            - key: 'CSR1000V'
             # Regular expression can also be provided
-            - TODO Regex
+            - key: '\d+'
+
         exclude:
-            - 'Should not be in the output'
+            - key: 'Should not be in the output'
         ...
 
 Parse
@@ -701,7 +702,7 @@ The 'output' key is optional if you do not want to verify anything.
             interface: GigabitEthernet1
         output:
             - value: 1500
-              operation: <= 2000
+              operation: <= 
         ...
 
 The follow operation is supported `"{=, >=, <=, >, <, !=}"`
@@ -713,7 +714,7 @@ The following example displays an action that also verifies its resulted diction
     # validating non-numerical reuslts
     - api: # ACTION
         continue: True
-        function: get_interface_mtu_size
+        function: get_interface_mtu_config_range
         arguments:
             interface: GigabitEthernet1
         output:
@@ -748,6 +749,7 @@ similar to api action and parse action.
     - learn:
         device: R1
         feature: bgp
+        ops: info
         include:
             - key: "[x][info]['instance']['default']['bgp_id']"
               value: 65000
@@ -848,48 +850,48 @@ devices in parallel.
         ...
 
 Saving and loading variable using 'Markup'
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Using this specific markup, users can save api, execute, configure, 
-and learn actions' outputs into a single variable and later load it into
-another variable or use it in another variable inside the YAML data-file. 
-For instance, you can use the output of an api to validate the outcome of
-another action.
-
-Another instance is to use the results of an action and use it within command
-keywords of other actions (i.e configure action in section-example_2).  It is
-also possible to save output of a configure, learn, execute, and parse action
-and load it anywhere in the YAML file. 
-
-An important note about loading variables that if you want to stay truthful to
-the data type and use it as what is, it is better to store data in a {key:
-value} pair format (section-example_1).
-
-You still can use the stored value anywhere in the file, yet if it is not
-following the {key: value} pair format the stored value will cast its type to a
-string.  This might affect your validation and test case outcome.
+Using this specific markup, you can save actions’ (api, execute, parse etc.)
+outputs into a single variable. Later you can use the saved variable in your 
+YAML data-file (#section-example1). 
 
 .. code-block:: YAML
 
     # section-example_1
+    # saving api action (function:get_interface_mtu_size) output value,
+    # using it in the api action (function:get_interface_mtu_config_range)
+    # as "min" value
     - apply_configuration:    
-          - api:
-              continue: True
-              device: PE1
-              function: get_interface_mtu_config_range
-              save_variable_name: output
-              arguments:
-                interface: GigabitEthernet1
-          - parse:
-              command: show version
-              device: R3_nx
-              command: show bgp process vrf all
-              keys:
-                - "[bgp_protocol_state][shutdown]"
-              output:
-                value: '%VARIABLES{output}'
+        - api:
+            continue: True
+            device: PE2
+            function: get_interface_mtu_size
+            save_variable_name: api_output
+            arguments:
+              interface: GigabitEthernet1
+        - api:
+            continue: True
+            device: PE1
+            function: get_interface_mtu_config_range
+            arguments:
+              interface: GigabitEthernet1
+            output:
+              value: 
+                range: '<1500-9216>'
+                min: '%VARIABLES{api_output}'
+                max: 9216
+
+    ...
+
+You can alter part of a statement using these markup values (#section-example_2). 
+
+.. code-block:: YAML
 
     # section-example_2
+    # Getting the api's output (function: get_interface_mtu_size), in this case 1500
+    # using it as part of the configure command 
+    # configure command here will be = router bgp 1500
     - apply_configuration:    
           - api:
               continue: True
@@ -901,9 +903,17 @@ string.  This might affect your validation and test case outcome.
           - configure:
               device: PE1
               command: |
-                router bgp '%VARIABLES{output}'
+                router bgp %VARIABLES{output}
+    ...      
 
-        ...
+**Note: If you want to stay truthful to the data type and use it as what is,
+it is better to store data in a {key:value} pair format (section-example_1). 
+If you use it as part of a string (section-example_2) the data type would be
+casting to string.
+
+**Note: It is not possible to save an output and load that same output in
+parallel into another variable. It is possible to take advantage of thus 
+markup language in any other scenario. 
 
 
 Trigger timeout/interval ratio adjustments
